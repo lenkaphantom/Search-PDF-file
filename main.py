@@ -1,6 +1,5 @@
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
-from Trie import Trie
 
 def search_and_display(query, trie, text_by_page):
     results = trie.search(query)
@@ -19,12 +18,13 @@ def main():
     try:
         trie = load_trie('trie.pkl')
     except FileNotFoundError:
-        print("Trie file not found. Please run trie_serialization.py to create the trie")
+        print("Trie fajl nije pronadjen. Pokrenite trie_serialization.py da biste ga kreirali.")
         return
 
     while True:
-        query = input("Enter search query: ").lower()
-        if query == 'exit':
+        print("Dobro dosli u pretragu PDF-a. Za izlaz u bilo kom trenutku unesite 'X'.")
+        query = input("Unesite rec za pretragu: ").lower()
+        if query == 'x' or query == 'X':
             break
         search_and_display(query, trie, text_by_page)
 
