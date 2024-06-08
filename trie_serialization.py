@@ -1,4 +1,4 @@
-from Trie import Trie
+from trie import Trie
 from parsing_pdf import load_parsed_text
 import pickle
 
