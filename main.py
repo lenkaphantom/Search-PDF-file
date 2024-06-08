@@ -1,15 +1,44 @@
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 
-def search_and_display(query, trie, text_by_page):
+
+def search(query, trie, text_by_page):
     results = trie.search(query)
+    result_dict = {}
     if results:
-        for rank, page_number in enumerate(results):
-            context = text_by_page[page_number][:200]
-            highlighted_context = context.replace(query, f"\033[1;31m{query}\033[0m")
-            print(f"{rank + 1}. Page {page_number + 1}: {highlighted_context}")
+        rank = 0
+        for page_number in results:
+            page_text = text_by_page[page_number]
+            start_index = page_text.find(query)
+            if start_index != -1:
+                start_context = max(0, start_index - 50)
+                end_context = min(len(page_text), start_index + len(query) + 50)
+                context = page_text[start_context:end_context]
+                highlighted_context = context.replace(query, f"\033[1;94m{query}\033[0m")
+                result_dict[rank] = (page_number + 1, highlighted_context)
+                rank += 1
+    return result_dict
+
+
+def search_and_display(query, trie, text_by_page):
+    results = search(query, trie, text_by_page)
+    i = 0
+    if results:
+        for key in results:
+            if i == 10:
+                choice = input("Prikazano je prvih 10 rezultata. Da li zelite da vidite jos? (Y/N): ")
+                if choice.lower() != 'y':
+                    break
+                i = 0
+            page_number, context = results[key]
+            print(f"-------------Rezultat {key + 1}-------------")
+            print(f"Strana: {page_number}")
+            print(context)
+            print("-------------------------------------\n")
+            i += 1
     else:
-        print("No results found")
+        print("Nema rezultata za unetu rec.")
+
 
 def main():
     parsed_text_file = 'parsed_text.json'
@@ -26,7 +55,11 @@ def main():
         query = input("Unesite rec za pretragu: ").lower()
         if query == 'x' or query == 'X':
             break
+        if len(query) < 3:
+            print("\nRec mora imati najmanje 3 karaktera.\n")
+            continue
         search_and_display(query, trie, text_by_page)
+
 
 if __name__ == "__main__":
     main()
