@@ -2,20 +2,37 @@ from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 from graph_serialization import load_graph
 
+import re
+
 def search(query, trie, text_by_page):
     results = trie.search(query)
     result_dict = {}
     if results:
         for page_number in results:
             page_text = text_by_page[page_number]
-            start_index = page_text.find(query)
+            start_index = page_text.lower().find(query.lower())
             if start_index != -1:
-                start_context = max(0, start_index - 50)
-                end_context = min(len(page_text), start_index + len(query) + 50)
-                context = page_text[start_context:end_context]
-                highlighted_context = context.replace(query, f"\033[1;94m{query}\033[0m")
+                start_context = page_text.rfind('.', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = page_text.rfind('!', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = page_text.rfind('?', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = 0
+
+                end_context = page_text.find('.', start_index)
+                if end_context == -1:
+                    end_context = page_text.find('!', start_index)
+                if end_context == -1:
+                    end_context = page_text.find('?', start_index)
+                if end_context == -1:
+                    end_context = len(page_text)
+
+                context = page_text[start_context:end_context].strip()
+                highlighted_context = re.sub(re.escape(query), f"\033[1;94m{query}\033[0m", context, flags=re.IGNORECASE)
                 result_dict[page_number] = highlighted_context
     return result_dict
+
 
 def rank_results(query, results, graph, text_by_page):
     ranked_results = []
