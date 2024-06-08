@@ -70,7 +70,7 @@ def search_and_display(query, trie, text_by_page, graph):
                 i = 0
             print(f"-------------Rezultat {k + 1}-------------")
             print(f"Strana: {page_number + 1}")
-            print(f"Rang: {rank}")
+            print(f"Skor: {rank}")
             print(context)
             print("-------------------------------------\n")
             i += 1
