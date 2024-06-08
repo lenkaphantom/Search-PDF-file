@@ -1,6 +1,6 @@
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
-
+from graph_serialization import load_graph
 
 def search(query, trie, text_by_page):
     results = trie.search(query)
@@ -17,31 +17,59 @@ def search(query, trie, text_by_page):
                 result_dict[page_number] = highlighted_context
     return result_dict
 
+def rank_results(query, results, graph, text_by_page):
+    ranked_results = []
+    for page_number in results.keys():
+        page_text = text_by_page[page_number]
+        word_count = page_text.lower().split().count(query)
+        
+        vertex = None
+        for v in graph.vertices():
+            if v.element() == page_number:
+                vertex = v
+                break
+        
+        citation_count = 0
+        if vertex:
+            citation_count = len(list(graph.incident_edges(vertex)))
 
-def search_and_display(query, trie, text_by_page):
+        score = word_count + citation_count
+        ranked_results.append((score, page_number, results[page_number]))
+
+    ranked_results.sort(reverse=True, key=lambda x: x[0])
+    return ranked_results
+
+def search_and_display(query, trie, text_by_page, graph):
     results = search(query, trie, text_by_page)
+    ranked_results = rank_results(query, results, graph, text_by_page)
     i = 0
-    if results:
-        for key in results:
+    k = 0
+    if ranked_results:
+        for rank, page_number, context in ranked_results:
             if i == 10:
                 choice = input("Prikazano je prvih 10 rezultata. Da li zelite da vidite jos? (Y/N): ")
                 if choice.lower() != 'y':
                     break
                 i = 0
-            page_number = key + 1
-            context = results[key]
-            print(f"-------------Rezultat {key + 1}-------------")
-            print(f"Strana: {page_number}")
+            print(f"-------------Rezultat {k + 1}-------------")
+            print(f"Strana: {page_number + 1}")
+            print(f"Rang: {rank}")
             print(context)
             print("-------------------------------------\n")
             i += 1
+            k += 1
     else:
         print("Nema rezultata za unetu rec.")
-
 
 def main():
     parsed_text_file = 'parsed_text.json'
     text_by_page = load_parsed_text(parsed_text_file)
+
+    try:
+        graph = load_graph('graph.pkl')
+    except FileNotFoundError:
+        print("Graph fajl nije pronadjen. Pokrenite graph_serialization.py da biste ga kreirali.")
+        return
     
     try:
         trie = load_trie('trie.pkl')
@@ -57,8 +85,7 @@ def main():
         if len(query) < 3:
             print("\nRec mora imati najmanje 3 karaktera.\n")
             continue
-        search_and_display(query, trie, text_by_page)
-
+        search_and_display(query, trie, text_by_page, graph)
 
 if __name__ == "__main__":
     main()
