@@ -61,7 +61,7 @@ def rank_results(query, results, graph, text_by_page):
         if len(words) > 1:
             both_words_count = sum(1 for word in words if word.lower() in page_text.lower())
 
-        score = word_count + citation_count + both_words_count * 2  # Veća težina za stranice sa oba pojma
+        score = word_count + citation_count + both_words_count * 2
         combined_context = ' ... '.join(contexts.values())
         ranked_results.append((score, page_number, combined_context))
 
@@ -108,7 +108,7 @@ def main():
 
     while True:
         print("Dobro dosli u pretragu PDF-a. Za izlaz u bilo kom trenutku unesite 'X'.")
-        query = input("Unesite rec za pretragu (za više reči koristite zarez, npr. 'word1, word2'): ").lower()
+        query = input("Unesite rec za pretragu (za više reči koristite zarez, npr. 'rec, rec'): ").lower()
         if query == 'x' or query == 'X':
             break
         if len(query) < 3:
