@@ -43,6 +43,15 @@ def search(query, trie, text_by_page):
                 results[page_number].add(context)
     return results
 
+
+def search_phrase(query, trie, text_by_page):
+    pass
+
+
+def search_operators(query, trie, text_by_page):
+    pass
+
+
 def rank_results(query, results, graph, text_by_page):
     words = query.split(", ")
     ranked_results = []
@@ -61,17 +70,22 @@ def rank_results(query, results, graph, text_by_page):
         if vertex:
             citation_count = len(list(graph.incident_edges(vertex)))
 
-        both_words_count = 0
+        all_words_count = 0
         if len(words) > 1:
-            both_words_count = sum(1 for word in words if word.lower() in page_text.lower())
+            all_words_count = sum(1 for word in words if word.lower() in page_text.lower())
 
-        score = word_count + citation_count + both_words_count * 2
+        score = word_count + citation_count + all_words_count * 2
         combined_context = ' ... '.join(contexts)
         highlighted_context = highlight_context(combined_context, words)
         ranked_results.append((score, page_number, highlighted_context))
 
     ranked_results.sort(reverse=True, key=lambda x: x[0])
     return ranked_results
+
+
+def save_results(results, file_name):
+    pass
+
 
 def search_and_display(query, trie, text_by_page, graph):
     results = search(query, trie, text_by_page)
@@ -100,8 +114,11 @@ def search_and_display(query, trie, text_by_page, graph):
         print("Nema rezultata za unetu rec.")
 
 def main():
-    parsed_text_file = 'parsed_text.json'
-    text_by_page = load_parsed_text(parsed_text_file)
+    try:
+        text_by_page = load_parsed_text('parsed_text.json')
+    except FileNotFoundError:
+        print("Parsed text fajl nije pronadjen. Pokrenite parsing_pdf.py da biste ga kreirali.")
+        return
 
     try:
         graph = load_graph('graph.pkl')
