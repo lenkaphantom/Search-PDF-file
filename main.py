@@ -5,25 +5,27 @@ import re
 
 def validate_query(query):
     if not query:
+        print("Unesite upit za pretragu.")
         return False
     
     if len(query) < 3:
+        print("Upit mora sadrzati bar 3 karaktera.")
         return False
     
-    ocurrences = query.count('"')
-    if ocurrences % 2 != 0:
+    if query.startswith('"') and not query.endswith('"'):
+        print("Niste zatvorili navodnike.")
         return False
     
     and_ocurrences = [i.start() for i in re.finditer("and", query)]
-    and_ocurrences.append([i.start() for i in re.finditer("AND", query)])
-
     or_ocurrences = [i.start() for i in re.finditer("or", query)]
-    or_ocurrences.append([i.start() for i in re.finditer("OR", query)])
-
     not_ocurrences = [i.start() for i in re.finditer("not", query)]
-    not_ocurrences.append([i.start() for i in re.finditer("NOT", query)])
 
     if 0 in and_ocurrences or 0 in or_ocurrences or 0 in not_ocurrences:
+        print("Operatori AND, OR i NOT ne mogu biti prvi karakteri upita.")
+        return False
+    
+    if len(query) - 1 in and_ocurrences or len(query) - 1 in or_ocurrences or len(query) - 1 in not_ocurrences:
+        print("Operatori AND, OR i NOT ne mogu biti poslednji karakteri upita.")
         return False
     
     return True
@@ -70,46 +72,7 @@ def search(query, trie, text_by_page):
 
 
 def search_phrase(query, trie, text_by_page):
-    words = query.split(" ")
-    results = {}
-
-    # Pronalaženje stranica koje sadrže sve reči
-    pages_with_all_words = None
-    for word in words:
-        pages_with_word = trie.search(word.lower())
-        if pages_with_all_words is None:
-            pages_with_all_words = pages_with_word
-        else:
-            pages_with_all_words = pages_with_all_words.intersection(pages_with_word)
-
-    # Provera redosleda reči na filtriranim stranicama
-    for page_number in pages_with_all_words:
-        page_text = text_by_page[page_number].lower()
-        found_index = page_text.find(words[0].lower())
-        while found_index != -1:
-            all_words_found = True
-            current_index = found_index + len(words[0])
-            for word in words[1:]:
-                next_word_index = page_text.find(word.lower(), current_index)
-                if next_word_index != current_index + 1:
-                    all_words_found = False
-                    break
-                current_index = next_word_index + len(word)
-            
-            if all_words_found:
-                start_context = max(page_text.rfind('.', 0, found_index), page_text.rfind('!', 0, found_index), page_text.rfind('?', 0, found_index)) + 1
-                end_context = min(page_text.find('.', current_index), page_text.find('!', current_index), page_text.find('?', current_index))
-                if end_context == -1:
-                    end_context = len(page_text)
-                
-                context = page_text[start_context:end_context].strip()
-                if page_number not in results:
-                    results[page_number] = set()
-                results[page_number].add(context)
-            
-            found_index = page_text.find(words[0].lower(), found_index + 1)
-
-    return results
+    pass
 
 
 def search_operators(query, trie, text_by_page):
@@ -153,9 +116,6 @@ def save_results(results, file_name):
 
 def search_and_display(query, trie, text_by_page, graph):
     if '"' in query:
-        if not validate_query(query):
-            print("\nUneli ste neispravan upit.\n")
-            return
         results = search_phrase(query, trie, text_by_page)
     else:
         results = search(query, trie, text_by_page)
@@ -204,12 +164,16 @@ def main():
         return
 
     while True:
-        print("Dobro dosli u pretragu PDF-a. Za izlaz u bilo kom trenutku unesite 'X'.")
-        query = input("Unesite rec za pretragu (za više reči koristite zarez, npr. 'rec, rec'): ").lower()
+        print("\nDobro dosli u pretragu PDF-a. Za izlaz iz programa unesite 'X'.")
+        print("Opcije za pretragu: ")
+        print("1. Unesite rec za pretragu. Ako unosite više reči, odvojite ih zarezom.")
+        print("2. Unesite frazu za pretragu. Fraza se unosi izmedju dva navodnika.")
+        print("3. Unesite upit sa operatorima AND, OR, NOT za pretragu.")
+        print("4. Autocomplete pretraga. Unesite deo reci za pretragu i '*' na kraju.")
+        query = input("Pretraga: ").lower()
         if query == 'x' or query == 'X':
             break
-        if len(query) < 3:
-            print("\nRec mora imati najmanje 3 karaktera.\n")
+        if not validate_query(query):
             continue
 
         search_and_display(query, trie, text_by_page, graph)
