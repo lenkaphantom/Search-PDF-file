@@ -3,9 +3,34 @@ from trie_serialization import load_trie
 from graph_serialization import load_graph
 import re
 
+def validate_query(query):
+    if not query:
+        return False
+    
+    if len(query) < 3:
+        return False
+    
+    ocurrences = query.count('"')
+    if ocurrences % 2 != 0:
+        return False
+    
+    and_ocurrences = [i.start() for i in re.finditer("and", query)]
+    and_ocurrences.append([i.start() for i in re.finditer("AND", query)])
+
+    or_ocurrences = [i.start() for i in re.finditer("or", query)]
+    or_ocurrences.append([i.start() for i in re.finditer("OR", query)])
+
+    not_ocurrences = [i.start() for i in re.finditer("not", query)]
+    not_ocurrences.append([i.start() for i in re.finditer("NOT", query)])
+
+    if 0 in and_ocurrences or 0 in or_ocurrences or 0 in not_ocurrences:
+        return False
+    
+    return True
+
 def highlight_context(context, words):
     for word in words:
-        word_pattern = re.compile(rf'(?i)\b{re.escape(word)}\b')
+        word_pattern = re.compile(rf'(?i)\b{re.escape(word)}')
         context = word_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
     return context
 
@@ -45,7 +70,46 @@ def search(query, trie, text_by_page):
 
 
 def search_phrase(query, trie, text_by_page):
-    pass
+    words = query.split(" ")
+    results = {}
+
+    # Pronalaženje stranica koje sadrže sve reči
+    pages_with_all_words = None
+    for word in words:
+        pages_with_word = trie.search(word.lower())
+        if pages_with_all_words is None:
+            pages_with_all_words = pages_with_word
+        else:
+            pages_with_all_words = pages_with_all_words.intersection(pages_with_word)
+
+    # Provera redosleda reči na filtriranim stranicama
+    for page_number in pages_with_all_words:
+        page_text = text_by_page[page_number].lower()
+        found_index = page_text.find(words[0].lower())
+        while found_index != -1:
+            all_words_found = True
+            current_index = found_index + len(words[0])
+            for word in words[1:]:
+                next_word_index = page_text.find(word.lower(), current_index)
+                if next_word_index != current_index + 1:
+                    all_words_found = False
+                    break
+                current_index = next_word_index + len(word)
+            
+            if all_words_found:
+                start_context = max(page_text.rfind('.', 0, found_index), page_text.rfind('!', 0, found_index), page_text.rfind('?', 0, found_index)) + 1
+                end_context = min(page_text.find('.', current_index), page_text.find('!', current_index), page_text.find('?', current_index))
+                if end_context == -1:
+                    end_context = len(page_text)
+                
+                context = page_text[start_context:end_context].strip()
+                if page_number not in results:
+                    results[page_number] = set()
+                results[page_number].add(context)
+            
+            found_index = page_text.find(words[0].lower(), found_index + 1)
+
+    return results
 
 
 def search_operators(query, trie, text_by_page):
@@ -88,7 +152,13 @@ def save_results(results, file_name):
 
 
 def search_and_display(query, trie, text_by_page, graph):
-    results = search(query, trie, text_by_page)
+    if '"' in query:
+        if not validate_query(query):
+            print("\nUneli ste neispravan upit.\n")
+            return
+        results = search_phrase(query, trie, text_by_page)
+    else:
+        results = search(query, trie, text_by_page)
     ranked_results = rank_results(query, results, graph, text_by_page)
     displayed_pages = set()
     i = 0
@@ -112,6 +182,7 @@ def search_and_display(query, trie, text_by_page, graph):
             k += 1
     else:
         print("Nema rezultata za unetu rec.")
+
 
 def main():
     try:
