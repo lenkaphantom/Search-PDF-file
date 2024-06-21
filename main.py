@@ -36,6 +36,7 @@ def highlight_context(context, words):
         context = word_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
     return context
 
+
 def search(query, trie, text_by_page):
     words = query.split(", ")
     results = {}
@@ -72,7 +73,59 @@ def search(query, trie, text_by_page):
 
 
 def search_phrase(query, trie, text_by_page):
-    pass
+    phrase = query.strip('"')
+    words = phrase.split()
+    if not words:
+        return {}
+
+    initial_results = trie.search(words[0])
+    if not initial_results:
+        return {}
+
+    results = {}
+
+    for page_number in initial_results:
+        page_text = text_by_page[page_number]
+        start_index = 0
+        while True:
+            start_index = page_text.lower().find(words[0].lower(), start_index)
+            if start_index == -1:
+                break
+
+            end_index = start_index + len(words[0])
+            match = True
+            for word in words[1:]:
+                next_index = page_text.lower().find(word.lower(), end_index)
+                if next_index != end_index + 1:
+                    match = False
+                    break
+                end_index = next_index + len(word)
+
+            if match:
+                start_context = page_text.rfind('.', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = page_text.rfind('!', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = page_text.rfind('?', 0, start_index) + 1
+                if start_context == 0:
+                    start_context = 0
+
+                end_context = page_text.find('.', end_index)
+                if end_context == -1:
+                    end_context = page_text.find('!', end_index)
+                if end_context == -1:
+                    end_context = page_text.find('?', end_index)
+                if end_context == -1:
+                    end_context = len(page_text)
+
+                context = page_text[start_context:end_context].strip()
+                if page_number not in results:
+                    results[page_number] = set()
+                results[page_number].add(context)
+
+            start_index += 1
+
+    return results
 
 
 def search_operators(query, trie, text_by_page):
@@ -80,7 +133,10 @@ def search_operators(query, trie, text_by_page):
 
 
 def rank_results(query, results, graph, text_by_page):
-    words = query.split(", ")
+    if '"' in query:
+        words = query.strip('"').split()
+    else:
+        words = query.split(", ")
     ranked_results = []
 
     for page_number, contexts in results.items():
@@ -164,7 +220,7 @@ def main():
         return
 
     while True:
-        print("\nDobro dosli u pretragu PDF-a. Za izlaz iz programa unesite 'X'.")
+        print("Dobro dosli u pretragu PDF-a. Za izlaz iz programa unesite 'X'.")
         print("Opcije za pretragu: ")
         print("1. Unesite rec za pretragu. Ako unosite više reči, odvojite ih zarezom.")
         print("2. Unesite frazu za pretragu. Fraza se unosi izmedju dva navodnika.")
