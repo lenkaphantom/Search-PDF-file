@@ -34,7 +34,7 @@ def validate_query(query):
 
 def highlight_context(context, words):
     for word in words:
-        word_pattern = re.compile(rf'(?i){re.escape(word)}')
+        word_pattern = re.compile(rf'(?i)\b{re.escape(word)}')
         context = word_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
     return context
 
@@ -68,14 +68,18 @@ def rank_results(query, results, graph, text_by_page):
 
         score = word_count + citation_count + all_words_count * 2
         combined_context = ' ... '.join(contexts)
+        if len(combined_context) > 500:
+            combined_context = combined_context[:500] + '...'
         highlighted_context = highlight_context(combined_context, words)
         ranked_results.append((score, page_number, highlighted_context))
 
     ranked_results.sort(reverse=True, key=lambda x: x[0])
     return ranked_results
 
+
 def save_results(results, file_name):
     pass
+
 
 def search_and_display(query, trie, text_by_page, graph):
     if '"' in query:
@@ -140,6 +144,20 @@ def main():
             break
         if not validate_query(query):
             continue
+
+        if query.endswith('*'):
+            words = trie.autocomplete(query[:-1])
+            print("Reči koje počinju sa unetim prefiksom:")
+            for i in range(len(words)):
+                print(f"{i + 1}. {words[i]}")
+            
+            choice = input("Unesite redni broj reči za pretragu: ")
+            try:
+                choice = int(choice)
+                query = words[choice - 1]
+            except (ValueError, IndexError):
+                print("Uneli ste pogrešan redni broj.")
+                continue
 
         search_and_display(query, trie, text_by_page, graph)
 

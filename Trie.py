@@ -3,6 +3,7 @@ class TrieNode:
         self.children = {}
         self.is_end_of_word = False
         self.pages = []
+        self.word = None
 
 class Trie:
     def __init__(self):
@@ -16,6 +17,7 @@ class Trie:
             node = node.children[char]
         node.is_end_of_word = True
         node.pages.append(page_number)
+        node.word = word
 
     def search(self, word):
         node = self.root
@@ -42,3 +44,24 @@ class Trie:
         for child in node.children.values():
             result.extend(self._collect_all_words(child))
         return result
+
+    def autocomplete(self, prefix):
+        node = self.root
+        results = []
+        prefix = prefix.lower()  # Pretvorite prefiks u mala slova
+
+        # Pronađemo čvor koji odgovara prefiksu
+        for char in prefix:
+            if char not in node.children:
+                return []
+            node = node.children[char]
+
+        # Sakupljamo sve reči koje počinju sa zadatim prefiksom
+        self._collect_words(node, results)
+        return results
+
+    def _collect_words(self, node, results):
+        if node.is_end_of_word:
+            results.append(node.word)  # Dodajemo reč umesto stranica
+        for child_node in node.children.values():
+            self._collect_words(child_node, results)
