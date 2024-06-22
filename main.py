@@ -1,7 +1,8 @@
+import re
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 from graph_serialization import load_graph
-import re
+from search import *
 
 def validate_query(query):
     if not query:
@@ -30,111 +31,19 @@ def validate_query(query):
     
     return True
 
+
 def highlight_context(context, words):
     for word in words:
-        word_pattern = re.compile(rf'(?i)\b{re.escape(word)}')
+        word_pattern = re.compile(rf'(?i){re.escape(word)}')
         context = word_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
     return context
-
-
-def search(query, trie, text_by_page):
-    words = query.split(", ")
-    results = {}
-
-    for word in words:
-        word_results = trie.search(word)
-        if word_results is None:
-            continue
-        for page_number in word_results:
-            if page_number not in results:
-                results[page_number] = set()
-            page_text = text_by_page[page_number]
-            start_index = page_text.lower().find(word.lower())
-            if start_index != -1:
-                start_context = page_text.rfind('.', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = page_text.rfind('!', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = page_text.rfind('?', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = 0
-
-                end_context = page_text.find('.', start_index)
-                if end_context == -1:
-                    end_context = page_text.find('!', start_index)
-                if end_context == -1:
-                    end_context = page_text.find('?', start_index)
-                if end_context == -1:
-                    end_context = len(page_text)
-
-                context = page_text[start_context:end_context].strip()
-                results[page_number].add(context)
-    return results
-
-
-def search_phrase(query, trie, text_by_page):
-    phrase = query.strip('"')
-    words = phrase.split()
-    if not words:
-        return {}
-
-    initial_results = trie.search(words[0])
-    if not initial_results:
-        return {}
-
-    results = {}
-
-    for page_number in initial_results:
-        page_text = text_by_page[page_number]
-        start_index = 0
-        while True:
-            start_index = page_text.lower().find(words[0].lower(), start_index)
-            if start_index == -1:
-                break
-
-            end_index = start_index + len(words[0])
-            match = True
-            for word in words[1:]:
-                next_index = page_text.lower().find(word.lower(), end_index)
-                if next_index != end_index + 1:
-                    match = False
-                    break
-                end_index = next_index + len(word)
-
-            if match:
-                start_context = page_text.rfind('.', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = page_text.rfind('!', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = page_text.rfind('?', 0, start_index) + 1
-                if start_context == 0:
-                    start_context = 0
-
-                end_context = page_text.find('.', end_index)
-                if end_context == -1:
-                    end_context = page_text.find('!', end_index)
-                if end_context == -1:
-                    end_context = page_text.find('?', end_index)
-                if end_context == -1:
-                    end_context = len(page_text)
-
-                context = page_text[start_context:end_context].strip()
-                if page_number not in results:
-                    results[page_number] = set()
-                results[page_number].add(context)
-
-            start_index += 1
-
-    return results
-
-
-def search_operators(query, trie, text_by_page):
-    pass
 
 
 def rank_results(query, results, graph, text_by_page):
     if '"' in query:
         words = query.strip('"').split()
+    elif any(op in query for op in ['AND', 'OR', 'NOT']):
+        words = re.split(r'\s+(AND|OR|NOT)\s+', query)[::2]
     else:
         words = query.split(", ")
     ranked_results = []
@@ -165,14 +74,14 @@ def rank_results(query, results, graph, text_by_page):
     ranked_results.sort(reverse=True, key=lambda x: x[0])
     return ranked_results
 
-
 def save_results(results, file_name):
     pass
-
 
 def search_and_display(query, trie, text_by_page, graph):
     if '"' in query:
         results = search_phrase(query, trie, text_by_page)
+    elif any(op in query for op in ['AND', 'OR', 'NOT']):
+        results = search_operators(query, trie, text_by_page)
     else:
         results = search(query, trie, text_by_page)
     ranked_results = rank_results(query, results, graph, text_by_page)
@@ -226,7 +135,7 @@ def main():
         print("2. Unesite frazu za pretragu. Fraza se unosi izmedju dva navodnika.")
         print("3. Unesite upit sa operatorima AND, OR, NOT za pretragu.")
         print("4. Autocomplete pretraga. Unesite deo reci za pretragu i '*' na kraju.")
-        query = input("Pretraga: ").lower()
+        query = input("Pretraga: ").strip()
         if query == 'x' or query == 'X':
             break
         if not validate_query(query):
