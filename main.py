@@ -1,10 +1,10 @@
 import re
-import os
-from fpdf import FPDF
+
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 from graph_serialization import load_graph
 from search import *
+from save_and_highlight_results import save_to_pdf
 
 def levenshtein_distance(word1, word2):
     if len(word1) < len(word2):
@@ -73,47 +73,6 @@ def validate_query(query):
         return False
     
     return True
-
-
-def get_filename(query):
-    if '"' in query:
-        return query.strip('"') + '.pdf'
-    return query + '.pdf'
-
-
-def save_to_pdf(results, query, text_by_page, filename='search_results.pdf'):
-    if not os.path.exists('rezultati'):
-        os.makedirs('rezultati')
-
-    filename = get_filename(query)
-    filename = os.path.join('rezultati', filename)
-
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    dejavu_font_path = os.path.join('dejavu-sans', 'DejaVuSans.ttf')
-    pdf.add_font('DejaVu', '', dejavu_font_path, uni=True)
-    pdf.set_font("DejaVu", size=12)
-
-    query_words = re.findall(r'\w+', query)
-
-    i = 0
-
-    for result in results:
-        if i == 10:
-            break
-        page_text = text_by_page[result[1]]
-        pdf.add_page()
-        pdf.set_text_color(0, 0, 0)
-
-        highlighted_page_text = highlight_context(page_text, query_words)
-
-        pdf.multi_cell(0, 10, txt=highlighted_page_text)
-        pdf.ln()
-
-        i += 1
-
-    pdf.output(filename)
 
 
 def highlight_context(context, words):
