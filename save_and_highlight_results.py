@@ -17,19 +17,30 @@ def save_to_pdf(results, query, text_by_page, filename='search_results.pdf'):
 
     pdf = fitz.open()
 
-    query_words = re.findall(r'\w+', query)
+    page_count = 0
 
     for result in results:
+        if page_count >= 10:
+            break
+
         page_number = result[1]
         page_text = text_by_page[page_number]
 
-        highlight_pdf_page(pdf, page_text, query_words)
+        highlight_pdf_page(pdf, page_text, query)
+
+        page_count += 1
 
     pdf.save(full_filename)
     pdf.close()
 
 
-def highlight_pdf_page(pdf, page_text, query_words):
+def highlight_pdf_page(pdf, page_text, query):
+    if '"' in query:
+        query_words = [query.strip('"')]
+    elif any(op in query for op in ['AND', 'OR', 'NOT']):
+        query_words = re.split(r'\s+(AND|OR|NOT)\s+', query)[::2]
+    else:
+        query_words = re.findall(r'\w+', query)
     page = pdf.new_page()
 
     page.insert_text((50, 100), page_text)

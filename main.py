@@ -84,6 +84,12 @@ def highlight_context(context, words):
     return context
 
 
+def highlight_phrase(context, phrase):
+    phrase_pattern = re.compile(rf'(?i){re.escape(phrase)}')
+    context = phrase_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
+    return context
+
+
 def rank_results(query, results, graph, text_by_page):
     if '"' in query:
         words = query.strip('"').split()
@@ -115,7 +121,10 @@ def rank_results(query, results, graph, text_by_page):
         combined_context = ' ... '.join(contexts)
         if len(combined_context) > 500:
             combined_context = combined_context[:500] + '...'
-        highlighted_context = highlight_context(combined_context, words)
+        if '"' in query:
+            highlighted_context = highlight_phrase(combined_context, query.strip('"'))
+        else:
+            highlighted_context = highlight_context(combined_context, words)
         ranked_results.append((score, page_number, highlighted_context))
 
     ranked_results.sort(reverse=True, key=lambda x: x[0])
@@ -167,9 +176,6 @@ def search_and_display(query, trie, text_by_page, graph):
             if i == 10:
                 choice = input("Prikazano je prvih 10 rezultata. Da li zelite da vidite jos? (Y/N): ")
                 if choice.lower() != 'y':
-                    choice = input("Da li zelite da sacuvate rezultate u PDF fajl? (Y/N): ")
-                    if choice.lower() == 'y':
-                        save_to_pdf(ranked_results, query, text_by_page)
                     break
                 i = 0
             print(f"-------------Rezultat {k + 1}-------------")
@@ -180,6 +186,9 @@ def search_and_display(query, trie, text_by_page, graph):
             displayed_pages.add(page_number)
             i += 1
             k += 1
+        choice = input("Da li zelite da sacuvate rezultate u PDF fajl? (Y/N): ")
+        if choice.lower() == 'y':
+            save_to_pdf(ranked_results, query, text_by_page)
     else:
         print("Nema rezultata za unetu rec.")
 
@@ -211,7 +220,7 @@ def main():
         print("3. Unesite upit sa operatorima AND, OR, NOT za pretragu.")
         print("4. Autocomplete pretraga. Unesite deo reci za pretragu i '*' na kraju.")
         query = input("Pretraga: ").strip()
-        if query == 'x' or query == 'X':
+        if query.lower() == 'x':
             break
         if not validate_query(query):
             continue
@@ -224,7 +233,7 @@ def main():
             
             while True:
                 choice = input("Unesite redni broj reči za pretragu: ")
-                if choice == 'x' or choice == 'X':
+                if choice.lower() == 'x':
                     break
                 try:
                     choice = int(choice)
