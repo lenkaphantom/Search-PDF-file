@@ -1,4 +1,6 @@
 import re
+import os
+from fpdf import FPDF
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 from graph_serialization import load_graph
@@ -37,11 +39,13 @@ def did_you_mean(word, trie):
 
     return closest_word
 
+
 def collect_all_possible_words(node, words):
     if node.is_end_of_word:
         words.append(node.word)
     for child in node.children.values():
         collect_all_possible_words(child, words)
+
 
 def validate_query(query):
     if not query:
@@ -70,11 +74,54 @@ def validate_query(query):
     
     return True
 
+
+def get_filename(query):
+    if '"' in query:
+        return query.strip('"') + '.pdf'
+    return query + '.pdf'
+
+
+def save_to_pdf(results, query, text_by_page, filename='search_results.pdf'):
+    if not os.path.exists('rezultati'):
+        os.makedirs('rezultati')
+
+    filename = get_filename(query)
+    filename = os.path.join('rezultati', filename)
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    dejavu_font_path = os.path.join('dejavu-sans', 'DejaVuSans.ttf')
+    pdf.add_font('DejaVu', '', dejavu_font_path, uni=True)
+    pdf.set_font("DejaVu", size=12)
+
+    query_words = re.findall(r'\w+', query)
+
+    i = 0
+
+    for result in results:
+        if i == 10:
+            break
+        page_text = text_by_page[result[1]]
+        pdf.add_page()
+        pdf.set_text_color(0, 0, 0)
+
+        highlighted_page_text = highlight_context(page_text, query_words)
+
+        pdf.multi_cell(0, 10, txt=highlighted_page_text)
+        pdf.ln()
+
+        i += 1
+
+    pdf.output(filename)
+
+
 def highlight_context(context, words):
     for word in words:
         word_pattern = re.compile(rf'(?i){re.escape(word)}')
         context = word_pattern.sub(lambda match: f"\033[1;94m{match.group(0)}\033[0m", context)
     return context
+
 
 def rank_results(query, results, graph, text_by_page):
     if '"' in query:
@@ -113,8 +160,6 @@ def rank_results(query, results, graph, text_by_page):
     ranked_results.sort(reverse=True, key=lambda x: x[0])
     return ranked_results
 
-def save_results(results, file_name):
-    pass
 
 def autocomplete_search(query, trie):
     words = trie.autocomplete(query)
@@ -124,6 +169,7 @@ def autocomplete_search(query, trie):
                                   'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')):
             final.append(word)
     return final
+
 
 def search_and_display(query, trie, text_by_page, graph):
     if '"' in query:
@@ -160,6 +206,9 @@ def search_and_display(query, trie, text_by_page, graph):
             if i == 10:
                 choice = input("Prikazano je prvih 10 rezultata. Da li zelite da vidite jos? (Y/N): ")
                 if choice.lower() != 'y':
+                    choice = input("Da li zelite da sacuvate rezultate u PDF fajl? (Y/N): ")
+                    if choice.lower() == 'y':
+                        save_to_pdf(ranked_results, query, text_by_page)
                     break
                 i = 0
             print(f"-------------Rezultat {k + 1}-------------")

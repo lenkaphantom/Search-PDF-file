@@ -34,6 +34,7 @@ def search(query, trie, text_by_page):
                 results[page_number].add(context)
     return results
 
+
 def search_phrase(query, trie, text_by_page):
     phrase = query.strip('"')
     words = phrase.split()
