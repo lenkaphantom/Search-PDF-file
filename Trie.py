@@ -48,20 +48,18 @@ class Trie:
     def autocomplete(self, prefix):
         node = self.root
         results = []
-        prefix = prefix.lower()  # Pretvorite prefiks u mala slova
+        prefix = prefix.lower()
 
-        # Pronađemo čvor koji odgovara prefiksu
         for char in prefix:
             if char not in node.children:
                 return []
             node = node.children[char]
 
-        # Sakupljamo sve reči koje počinju sa zadatim prefiksom
         self._collect_words(node, results)
         return results
 
     def _collect_words(self, node, results):
         if node.is_end_of_word:
-            results.append(node.word)  # Dodajemo reč umesto stranica
+            results.append(node.word)
         for child_node in node.children.values():
             self._collect_words(child_node, results)
