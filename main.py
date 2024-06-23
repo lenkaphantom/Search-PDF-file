@@ -6,6 +6,7 @@ from graph_serialization import load_graph
 from search import *
 from save_and_highlight_results import save_to_pdf
 
+
 def levenshtein_distance(word1, word2):
     if len(word1) < len(word2):
         return levenshtein_distance(word2, word1)
@@ -24,6 +25,7 @@ def levenshtein_distance(word1, word2):
         previous_row = current_row
 
     return previous_row[-1]
+
 
 def did_you_mean(word, trie):
     all_words = []
@@ -181,6 +183,7 @@ def search_and_display(query, trie, text_by_page, graph):
     else:
         print("Nema rezultata za unetu rec.")
 
+
 def main():
     try:
         text_by_page = load_parsed_text('parsed_text.json')
@@ -235,6 +238,7 @@ def main():
                     continue
 
         search_and_display(query, trie, text_by_page, graph)
+
 
 if __name__ == "__main__":
     main()

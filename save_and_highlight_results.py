@@ -2,10 +2,12 @@ import os
 import re
 import fitz
 
+
 def get_filename(query):
     if '"' in query:
         return query.strip('"') + '.pdf'
     return query + '.pdf'
+
 
 def save_to_pdf(results, query, text_by_page, filename='search_results.pdf'):
     if not os.path.exists('rezultati'):
@@ -25,6 +27,7 @@ def save_to_pdf(results, query, text_by_page, filename='search_results.pdf'):
 
     pdf.save(full_filename)
     pdf.close()
+
 
 def highlight_pdf_page(pdf, page_text, query_words):
     page = pdf.new_page()
