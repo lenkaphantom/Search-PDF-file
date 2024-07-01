@@ -1,4 +1,6 @@
+import os
 import re
+import fitz  # PyMuPDF
 
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
@@ -36,7 +38,6 @@ def did_you_mean(word, trie):
     for candidate in all_words:
         distance = levenshtein_distance(word, candidate)
         if distance < min_distance:
-            min_distance = distance
             closest_word = candidate
 
     return closest_word
@@ -113,11 +114,15 @@ def rank_results(query, results, graph, text_by_page):
         if vertex:
             citation_count = len(list(graph.incident_edges(vertex)))
 
-        all_words_count = 0
-        if len(words) > 1:
-            all_words_count = sum(1 for word in words if word.lower() in page_text.lower())
+        referenced_word_count = 0
+        if vertex:
+            for edge in graph.incident_edges(vertex):
+                source_vertex = edge.opposite(vertex)
+                source_page_number = source_vertex.element()
+                source_page_text = text_by_page[source_page_number]
+                referenced_word_count += sum(source_page_text.lower().split().count(word.lower()) for word in words)
 
-        score = word_count + citation_count + all_words_count * 2
+        score = word_count + citation_count + referenced_word_count
         combined_context = ' ... '.join(contexts)
         if len(combined_context) > 500:
             combined_context = combined_context[:500] + '...'
