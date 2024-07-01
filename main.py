@@ -1,6 +1,4 @@
-import os
 import re
-import fitz  # PyMuPDF
 
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
