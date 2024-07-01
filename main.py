@@ -124,8 +124,8 @@ def rank_results(query, results, graph, text_by_page):
 
         score = word_count + citation_count + referenced_word_count
         combined_context = ' ... '.join(contexts)
-        if len(combined_context) > 500:
-            combined_context = combined_context[:500] + '...'
+        if len(combined_context) > 300:
+            combined_context = combined_context[:300] + '...'
         if '"' in query:
             highlighted_context = highlight_phrase(combined_context, query.strip('"'))
         else:
