@@ -1,5 +1,4 @@
 import re
-
 from parsing_pdf import load_parsed_text
 from trie_serialization import load_trie
 from graph_serialization import load_graph
@@ -27,6 +26,13 @@ def levenshtein_distance(word1, word2):
     return previous_row[-1]
 
 
+def collect_all_possible_words(node, words):
+    if node.is_end_of_word:
+        words.append(node.word)
+    for child in node.children.values():
+        collect_all_possible_words(child, words)
+
+
 def did_you_mean(word, trie):
     all_words = []
     collect_all_possible_words(trie.root, all_words)
@@ -37,42 +43,36 @@ def did_you_mean(word, trie):
         distance = levenshtein_distance(word, candidate)
         if distance < min_distance:
             closest_word = candidate
+            min_distance = distance
 
     return closest_word
-
-
-def collect_all_possible_words(node, words):
-    if node.is_end_of_word:
-        words.append(node.word)
-    for child in node.children.values():
-        collect_all_possible_words(child, words)
 
 
 def validate_query(query):
     if not query:
         print("Unesite upit za pretragu.")
         return False
-    
+
     if len(query) < 3:
         print("Upit mora sadrzati bar 3 karaktera.")
         return False
-    
+
     if query.startswith('"') and not query.endswith('"'):
         print("Niste zatvorili navodnike.")
         return False
-    
-    and_ocurrences = [i.start() for i in re.finditer("and", query)]
-    or_ocurrences = [i.start() for i in re.finditer("or", query)]
-    not_ocurrences = [i.start() for i in re.finditer("not", query)]
 
-    if 0 in and_ocurrences or 0 in or_ocurrences or 0 in not_ocurrences:
+    and_occurrences = [i.start() for i in re.finditer("and", query, re.IGNORECASE)]
+    or_occurrences = [i.start() for i in re.finditer("or", query, re.IGNORECASE)]
+    not_occurrences = [i.start() for i in re.finditer("not", query, re.IGNORECASE)]
+
+    if 0 in and_occurrences or 0 in or_occurrences or 0 in not_occurrences:
         print("Operatori AND, OR i NOT ne mogu biti prvi karakteri upita.")
         return False
-    
-    if len(query) - 1 in and_ocurrences or len(query) - 1 in or_ocurrences or len(query) - 1 in not_ocurrences:
+
+    if len(query) - 1 in and_occurrences or len(query) - 1 in or_occurrences or len(query) - 1 in not_occurrences:
         print("Operatori AND, OR i NOT ne mogu biti poslednji karakteri upita.")
         return False
-    
+
     return True
 
 
@@ -93,9 +93,10 @@ def rank_results(query, results, graph, text_by_page):
     if '"' in query:
         words = query.strip('"').split()
     elif any(op in query for op in ['AND', 'OR', 'NOT']):
-        words = re.split(r'\s+(AND|OR|NOT)\s+', query)[::2]
+        words = re.split(r'\s+(AND|OR|NOT)\s+', query, flags=re.IGNORECASE)[::2]
     else:
         words = query.split(", ")
+
     ranked_results = []
 
     for page_number, contexts in results.items():
@@ -107,7 +108,7 @@ def rank_results(query, results, graph, text_by_page):
             if v.element() == page_number:
                 vertex = v
                 break
-        
+
         citation_count = 0
         if vertex:
             citation_count = len(list(graph.incident_edges(vertex)))
@@ -151,7 +152,7 @@ def search_and_display(query, trie, text_by_page, graph):
         results = search_operators(query, trie, text_by_page)
     else:
         results = search(query, trie, text_by_page)
-    
+
     if not results:
         suggestion = did_you_mean(query, trie)
         if suggestion:
@@ -208,7 +209,7 @@ def main():
     except FileNotFoundError:
         print("Graph fajl nije pronadjen. Pokrenite graph_serialization.py da biste ga kreirali.")
         return
-    
+
     try:
         trie = load_trie('trie.pkl')
     except FileNotFoundError:
@@ -233,7 +234,7 @@ def main():
             print("Reči koje počinju sa unetim prefiksom:")
             for i in range(len(words)):
                 print(f"{i + 1}. {words[i]}")
-            
+
             while True:
                 choice = input("Unesite redni broj reči za pretragu: ")
                 if choice.lower() == 'x':
