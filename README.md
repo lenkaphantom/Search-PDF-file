@@ -32,6 +32,3 @@ Goal: provide fast and relevant search over the book "Data Structures and Algori
 - `fun*` (autocomplete / suggestions)
 	- Serialization of data structures for faster startup (`*_serialization.py`).
 	- Support for logical operators `AND`, `OR`, `NOT` and pagination of results.
-- >21 points (additional):
-	- Phrase search, "did you mean" suggestions, operator grouping with parentheses and autocomplete.
-	- Extra options such as extracting the first N result pages into a PDF and highlighting inside that PDF.
