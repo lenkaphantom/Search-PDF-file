@@ -1,96 +1,78 @@
-# 🕮 Projekat 2 — Mašina za pretraživanje PDF dokumenta (search engine)
+# 🕮 Project 2 — PDF Search Engine
 
-Ovaj projekat implementira konzolnu mašinu za pretraživanje sadržaja jednog PDF dokumenta. Program pri pokretanju parsira stranice dokumenta (ili učitava već parsiran `txt/json` ulaz), gradi podatkovne strukture za efikasno pretraživanje (trie, invertovani indeks, graf stranica) i omogućava korisniku unos naprednih tekstualnih upita sa rangiranjem rezultata.
+This project implements a console-based search engine for a single PDF document. On startup the program parses the document pages (or loads already-parsed `txt/json` input), constructs data structures for efficient searching (trie, inverted index, page graph) and lets the user enter advanced text queries with ranked results.
 
-Glavni cilj: omogućiti brzo i relevantno pretraživanje knjige "Data Structures and Algorithms in Python" (koristi se kao test fajl), uz konzolni meni, isticanje pojmova u kontekstu i serijalizaciju struktura radi ubrzanja narednih pokretanja.
+Goal: provide fast and relevant search over the book "Data Structures and Algorithms in Python" (used as the test file), with a console menu, highlighted matches in context, and optional serialization to speed up subsequent runs.
 
-**Brzi pregled**
-- **Naziv projekta:** `Projekat2` — pretraga PDF-a
-- **Glavni fajl za pokretanje:** `main.py`
-- **Ulazni podaci:** PDF fajl (preporučeno) ili već parsirani `txt/json` (`parsed_text.json`)
-- **Glavne komponente:** `parsing_pdf.py`, `Trie.py`, `trie_serialization.py`, `Graph.py`, `graph_serialization.py`, `search.py`, `save_and_highlight_results.py`
+**Quick overview**
+- **Project name:** `Projekat2` — PDF search
+- **Main entry:** `main.py`
+- **Input:** PDF file (recommended) or pre-parsed `txt/json` (`parsed_text.json`)
+- **Key modules:** `parsing_pdf.py`, `Trie.py`, `trie_serialization.py`, `Graph.py`, `graph_serialization.py`, `search.py`, `save_and_highlight_results.py`
 
-**Funkcionalnosti**
-- **Parsiranje PDF-a:** Ekstrakcija teksta sa svake stranice (modul `parsing_pdf.py`). Ako ne želite PDF parsiranje, možete koristiti već parsiran fajl `parsed_text.json`.
-- **Trie:** Struktura za efikasno pretraživanje reči po stranicama (`Trie.py`, `trie_serialization.py`).
-- **Graf stranica:** Reprezentacija veza između stranica na osnovu referenci u tekstu (npr. "See page 136") u `Graph.py`.
-- **Rangiranje rezultata:** Rang se formira na osnovu broja pojavljivanja upitnih reči na stranici, pojavljivanja reči na povezanim stranicama i broja in-linkova (sve u `search.py`).
-- **Konzolni meni:** Interaktivni meni za unos upita, paginaciju rezultata i dodatne opcije.
-- **Serijalizacija:** Sačuvane strukture mogu se učitati narednim pokretanjima radi ubrzanja (`trie_serialization.py`, `graph_serialization.py`).
-- **Isticanje (highlight):** Opcija za generisanje PDF stranica sa označenim ključnim rečima (`save_and_highlight_results.py`).
+**Features**
+- **PDF parsing:** Extract text per page (`parsing_pdf.py`). If you prefer not to parse a PDF, use the provided `parsed_text.json`.
+- **Trie:** Efficient per-page word lookup (`Trie.py`, `trie_serialization.py`).
+- **Page graph:** Representation of links between pages inferred from references in the text (e.g. "See page 136") (`Graph.py`).
+- **Ranking:** Scores consider occurrences of query terms on a page, occurrences on pages that link to it, and in-link counts (`search.py`).
+- **Console menu:** Interactive menu for queries, pagination and extra options.
+- **Serialization:** Save/load constructed structures to avoid rebuilding them every run (`trie_serialization.py`, `graph_serialization.py`).
+- **Highlighting:** Option to create a PDF with the found keywords highlighted (`save_and_highlight_results.py`).
 
-**Podržane opcije pretrage**
-- Jedna ili više reči razdvojenih razmakom (rangira se po učestalosti i prisustvu svih reči).
-- Logički operatori: `AND`, `OR`, `NOT` (kombinovanje u izrazima).
-- Fraze u navodnicima ("..."), npr. `"binary search"` — traži tačnu sekvencu reči.
-- Autocomplete i wildcard podrška (npr. `fun*` predlozi autocomplete).
+**Supported query features**
+- Single or multiple words separated by spaces (ranked by frequency and presence).
+- Logical operators: `AND`, `OR`, `NOT` (combine in expressions).
+- Phrases in quotes (e.g. `"binary search"`) to match exact sequences.
+- Autocomplete and wildcard support (e.g. `fun*`).
 
-**Primeri upita**
+**Query examples**
 - `python AND sequence`
 - `dictionary NOT list`
 - `"binary search"`
-- `fun*` (autocomplete / predlozi)
+- `fun*` (autocomplete / suggestions)
 
-**Kako pokrenuti (Windows / PowerShell)**
-1. (Preporuka) Kreirajte virtuelno okruženje i instalirajte zavisnosti ako koristite biblioteke za PDF:
+**How to run (Windows / PowerShell)**
+1. (Optional) Create a virtual environment and install dependencies if you use PDF libraries:
 
 ```powershell
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-2. Pokrenite program i pratite konzolni meni:
+2. Run the program and follow the console menu:
 
 ```powershell
 python main.py
 ```
 
-Napomena: ako nemate `requirements.txt`, za PDF parsing preporučujemo `pdfminer.six` ili `PyPDF2`. Takođe, za obojeni ispis u konzoli može se koristiti `termcolor` ili `colorama`.
+Note: If there is no `requirements.txt`, recommended libraries for PDF parsing are `pdfminer.six` or `PyPDF2`. For colored console output consider `termcolor` or `colorama`.
 
-**Struktura repozitorijuma**
-- `main.py` — ulazna tačka i konzolni meni
-- `parsing_pdf.py` — parsiranje PDF dokumenata u tekst-po-stranici
-- `Trie.py` — implementacija trie strukture
-- `trie_serialization.py` — serijalizacija / deserijalizacija trie-a
-- `Graph.py` — reprezentacija grafa stranica i pomoćne metode
-- `graph_serialization.py` — serijalizacija / deserijalizacija grafa
-- `search.py` — logika upita, rangiranje i formiranje rezultata
-- `save_and_highlight_results.py` — generisanje PDF-a sa označenim pojmovima
-- `parsed_text.json` — primer već parsiranog sadržaja (opciono)
-- `rezultati/` — folder za snimljene rezultate i generisane PDF-ove
+**Repository structure**
+- `main.py` — entry point and console menu
+- `parsing_pdf.py` — parse PDF files into per-page text
+- `Trie.py` — trie implementation
+- `trie_serialization.py` — trie serialization / deserialization
+- `Graph.py` — page graph representation and helpers
+- `graph_serialization.py` — graph serialization / deserialization
+- `search.py` — query parsing, ranking and result generation
+- `save_and_highlight_results.py` — produce PDF with highlighted terms
+- `parsed_text.json` — example of pre-parsed content (optional)
+- `rezultati/` — directory for saved results and generated PDFs
 
-**Ocenjivanje (kako projekat zadovoljava kriterijume zadatka)**
-- 10 poena (osnovne funkcije):
-	- Rezultati sadrže redni broj rezultata, redni broj stranice i kratak kontekst.
-	- Isticanje traženih reči u isečku (konzolno obojeno ili sa mark-up-om).
-	- Rangiranje zasnovano na broju pojavljivanja traženih reči.
-	- Višerečeni upiti utiču na ukupni rang (više pojavljivanja → viši rang).
-	- Konzolni meni za iniciranje pretrage.
-- 17 poena:
-	- Rangiranje uzima u obzir i veze (in-linkove) i broj pojavljivanja na stranicama koje linkuju ciljnu stranicu.
-	- Stranice su organizovane kao graf (`Graph.py`).
-	- Trie koristi se za efikasno pretraživanje reči (`Trie.py`).
-- 21 poen:
-	- Serijalizacija struktura radi bržeg ponovnog pokretanja (`*_serialization.py`).
-	- Podrška logičkih operatora `AND`, `OR`, `NOT` i paginacija rezultata.
-- >21 poen (dodatno):
-	- Fraze, predlozi "did you mean", grupisanje operatora sa zagradama i autocomplete.
-	- Dodatne opcije: generisanje PDF-a sa prvih N rezultata, isticanje u PDF-u.
-
-**Saveti za testiranje**
-- Testirajte prvo sa `parsed_text.json` da izbegnete dugotrajno parsiranje PDF-a.
-- Koristite knjigu "Data Structures and Algorithms in Python" iz `Files/Literatura` kao testni dokument.
-- Proverite da li su serijalizovani fajlovi kreirani nakon prvog pokretanja; sledeća pokretanja će biti brža.
-
-**Moguća poboljšanja**
-- Poboljšati rangiranje koristeći TF-IDF ili PageRank po grafo-logici.
-- GUI ili web interfejs za lakše pregledanje i paginaciju rezultata.
-- Naprednije PDF highlighting rešenje koristeći biblioteku koja podržava izmenu PDF-a.
-
----
-Ako želite, mogu odmah:
-- pokrenuti `main.py` (ako želite da testiram lokalno),
-- ili ažurirati `requirements.txt` sa preporučenim paketima,
-- ili dodati primer upita i snimak izlaza.
-
-
+**Grading mapping (how the project meets assignment criteria)**
+- 10 points (basic requirements):
+	- Results include result index, page number and a short context snippet.
+	- Matches highlighted in the snippet (console color or markup).
+	- Ranking based on term frequencies.
+	- Multi-word queries influence the rank (more occurrences → higher rank).
+	- Console menu to start searches.
+- 17 points:
+	- Ranking considers links (in-links) and occurrences on pages that link to the target page.
+	- Pages organized as a graph (`Graph.py`).
+	- Trie used for efficient per-page word lookup (`Trie.py`).
+- 21 points:
+	- Serialization of data structures for faster startup (`*_serialization.py`).
+	- Support for logical operators `AND`, `OR`, `NOT` and pagination of results.
+- >21 points (additional):
+	- Phrase search, "did you mean" suggestions, operator grouping with parentheses and autocomplete.
+	- Extra options such as extracting the first N result pages into a PDF and highlighting inside that PDF.
